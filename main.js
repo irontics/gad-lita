@@ -100,14 +100,14 @@ cedulaInput.addEventListener('input', async (e) => {
     }
 }, 500);
 
-// --- FUNCIÓN DE COMPRESIÓN (PARA EVITAR ERROR DE CUOTA CON 3 FOTOS OFFLINE) ---
+// --- FUNCIÓN COMPRESIÓN: OPTIMIZADA ---
 async function comprimirImagen(base64Str) {
     return new Promise((resolve) => {
         const img = new Image();
         img.src = base64Str;
         img.onload = () => {
             const canvas = document.createElement('canvas');
-            const MAX_WIDTH = 800; 
+            const MAX_WIDTH = 800; // Tamaño profesional para reportes
             let width = img.width;
             let height = img.height;
 
@@ -126,11 +126,13 @@ async function comprimirImagen(base64Str) {
             canvas.height = height;
             const ctx = canvas.getContext('2d');
             ctx.drawImage(img, 0, 0, width, height);
-            // Calidad al 0.6 para asegurar que 3 fotos entren en los 5MB del localStorage
+            
+            // Calidad 0.6 para asegurar que 3 fotos pesen menos de 1MB en total
             resolve(canvas.toDataURL('image/jpeg', 0.6));
         };
     });
 }
+
 
 // --- FUNCIÓN MATEMÁTICA: VALIDAR CÉDULA ECUATORIANA ---
 function validarCedulaEcuatoriana(cedula) {
@@ -218,17 +220,28 @@ async function subirFoto(archivo) {
 }
 
 // 2. GPS (CORREGIDO)
+// --- FUNCIÓN GPS: CORREGIDA ---
 async function obtenerLinkMapa() {
     return new Promise((resolve) => {
-        if (!navigator.geolocation) resolve("No soportado");
-        else {
+        if (!navigator.geolocation) {
+            resolve("No soportado");
+        } else {
             navigator.geolocation.getCurrentPosition(
                 (p) => {
-                    const link = `https://www.google.com/maps?q=${p.coords.latitude},${p.coords.longitude}`;
+                    // Corrección de sintaxis en la URL de Google Maps
+                    const lat = p.coords.latitude;
+                    const lon = p.coords.longitude;
+                    const link = `https://www.google.com/maps?q=${lat},${lon}`;
                     resolve(link);
                 },
-                () => resolve("No proporcionada"), 
-                { timeout: 8000, enableHighAccuracy: true }
+                (error) => {
+                    console.warn("GPS Error:", error);
+                    resolve("No proporcionada");
+                }, 
+                { 
+                    timeout: 8000, 
+                    enableHighAccuracy: true 
+                }
             );
         }
     });
@@ -348,7 +361,7 @@ window.verificarAdmin = function() {
 
 // 5. TABLA WEB
 async function actualizarTabla() {
-    const { data, error } = await supabase.from('reportes').select('*').order('created_at', { ascending: false });
+    const { data, error } = await supabase.from('reportes').select('id, created_at, nombre_ciudadano, sector, descripcion, estado, ubicacion, foto_url, cedula_ciudadano').order('created_at', { ascending: false });
     const cont = document.getElementById('tablaReportes');
     if (error || !cont) return;
 
@@ -368,9 +381,11 @@ async function actualizarTabla() {
             </thead>
             <tbody>
                 ${data.map(item => {
+                  
                     const fotos = item.foto_url ? item.foto_url.split(', ') : [];
                     const fotosHtml = fotos.map((url, i) => `<a href="${url}" target="_blank" class="mr-1">🖼️${i+1}</a>`).join('');
-
+  console.log("ID EN TABLA:", item.id);
+                    console.log("ITEM:", item);
                     return `
                     <tr class="border-b border-gray-200">
                         <td class="p-2 text-gray-600">${new Date(item.created_at).toLocaleDateString()}</td>
@@ -391,32 +406,156 @@ async function actualizarTabla() {
                                 item.estado === 'Finalizado' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-yellow-50 text-yellow-800 border-yellow-200'
                             }">${item.estado}</span>
                         </td>
-                        <td class="p-2 text-center">
-                            <div class="flex justify-center gap-1">
-                                ${item.estado !== 'Finalizado' ? `
-                                    <button onclick="window.cambiarEstado('${item.id}')" class="bg-green-600 text-white font-bold text-[8px] py-1 px-2 rounded">OK</button>
-                                    <button onclick="window.eliminarReporte('${item.id}')" class="bg-red-600 text-white font-bold text-[8px] py-1 px-2 rounded">X</button>
-                                ` : '✅'}
-                            </div>
-                        </td>
+                       <td class="p-2 text-center">
+    <div class="flex justify-center gap-1">
+        ${item.estado === 'Pendiente' && item.id ? `
+            
+            <button onclick="window.cambiarEstado(${item.id})" 
+                    title="Marcar como Atendido" 
+                    class="bg-green-600 hover:bg-green-700 text-white font-bold text-[8px] py-1 px-2 rounded transition-colors">
+                OK
+            </button>
+            <button onclick="window.eliminarReporte(${item.id})" 
+                    title="Eliminar/Cancelar Reporte" 
+                    class="bg-red-600 hover:bg-red-700 text-white font-bold text-[8px] py-1 px-2 rounded transition-colors">
+                X
+            </button>
+        ` : (item.estado === 'Atendido' ? '✅' : (item.estado === 'Cancelado' ? '❌' : '—'))}
+    </div>
+</td>
                     </tr>`;
                 }).join('')}
             </tbody>
         </table>`;
 }
 
-// 6. ACCIONES
-window.cambiarEstado = async (id) => {
-    await supabase.from('reportes').update({ estado: 'Finalizado' }).eq('id', id);
-    // Nota: El Realtime llamará a actualizarTabla() automáticamente tras el update
+// ============================================================
+// 6. GESTIÓN DE REPORTES (MODAL DINÁMICO)
+// ============================================================
+
+// DECLARAR SOLO UNA VEZ COMO GLOBALES DE WINDOW
+window.idReporteSeleccionado = null;
+window.accionSeleccionada = null;
+
+window.cambiarEstado = (id) => {
+    console.log("CLICK cambiarEstado ID:", id);
+    console.log("ID Recibido:", id);
+  window.idReporteSeleccionado = id; // Aseguramos que se guarde en window
+    window.accionSeleccionada = 'Atendido';
+    abrirModalGestion("Finalizar Reporte", 'Atendido');
 };
 
-window.eliminarReporte = async (id) => {
-    if(confirm("¿Eliminar reporte?")) {
-        await supabase.from('reportes').delete().eq('id', id);
-        // Nota: El Realtime llamará a actualizarTabla() automáticamente tras el delete
-    }
+window.eliminarReporte = (id) => {
+    console.log("CLICK eliminarReporte ID:", id);
+   window.idReporteSeleccionado = id; // Aseguramos que se guarde en window
+    window.accionSeleccionada = 'Cancelado';
+    abrirModalGestion("Eliminar/Cancelar Reporte", 'Cancelado');
 };
+
+async function abrirModalGestion(titulo, tipoAccion) {
+    const modal = document.getElementById('modalGestion');
+    const combo = document.getElementById('comboMotivo');
+    const tituloElemento = document.getElementById('modalTitulo');
+    
+    if (!modal || !combo) return;
+
+    tituloElemento.innerText = titulo;
+    combo.innerHTML = '<option disabled selected>Cargando opciones...</option>';
+    modal.style.display = 'flex';
+
+    try {
+        // CONSULTA DINÁMICA A LA BBDD
+        const { data, error } = await supabase
+            .from('config_combos')
+            .select('opcion')
+            .eq('tipo', tipoAccion)
+            .eq('activo', true);
+
+        if (error) throw error;
+
+        if (data && data.length > 0) {
+            combo.innerHTML = data.map(d => `<option value="${d.opcion}">${d.opcion}</option>`).join('');
+        } else {
+            combo.innerHTML = '<option value="General">General / Otros</option>';
+        }
+    } catch (e) {
+        console.error("Error cargando motivos:", e);
+        combo.innerHTML = '<option value="Error">Error al cargar opciones</option>';
+    }
+    
+    document.getElementById('txtObservacion').value = ""; 
+}
+
+// Configuración de eventos del Modal (Se ejecuta una sola vez)
+
+
+document.addEventListener('DOMContentLoaded', () => {
+    const btnConfirmar = document.getElementById('btnConfirmarAccion');
+    const btnCancelar = document.getElementById('btnCancelarModal');
+
+    // 1. Lógica para cerrar el modal
+    if (btnCancelar) {
+        btnCancelar.onclick = () => {
+            const modal = document.getElementById('modalGestion');
+            if (modal) modal.style.display = 'none';
+        };
+    }
+console.log("CONFIRMAR ID:", window.idReporteSeleccionado);
+    if (btnConfirmar) {
+    btnConfirmar.onclick = async () => {
+         console.log("ID GLOBAL ACTUAL:", window.idReporteSeleccionado);
+        const motivoElement = document.getElementById('comboMotivo');
+        const observacionElement = document.getElementById('txtObservacion');
+        
+        if (!motivoElement || !observacionElement) return;
+
+        const motivo = motivoElement.value;
+        const observacion = observacionElement.value;
+
+        // VALIDACIÓN: Evita el error de "undefined" en bigint
+       if (
+    window.idReporteSeleccionado === null ||
+    window.idReporteSeleccionado === undefined ||
+    isNaN(Number(window.idReporteSeleccionado))
+) {
+    console.error("ID inválido detectado:", window.idReporteSeleccionado);
+    return alert("Error: ID inválido");
+}
+
+        if (!motivo || motivo.includes("Cargando")) {
+            return alert("Por favor seleccione un motivo.");
+        }
+
+        btnConfirmar.disabled = true;
+        btnConfirmar.innerText = "Guardando...";
+
+        try {
+            const { error } = await supabase
+                .from('reportes')
+                .update({ 
+                    estado: window.accionSeleccionada,
+                    motivo_accion: motivo,
+                    observacion_cierre: observacion,
+                    fecha_gestion: new Date().toISOString()
+                })
+                .eq('id', Number(window.idReporteSeleccionado));
+
+            if (!error) {
+                document.getElementById('modalGestion').style.display = 'none';
+            } else {
+                alert("Error al actualizar: " + error.message);
+            }
+        } catch (err) {
+            console.error("Error en la petición:", err);
+            alert("Error de conexión con el servidor.");
+        } finally {
+            btnConfirmar.disabled = false;
+            btnConfirmar.innerText = "Confirmar";
+             }
+        }; 
+    } 
+
+}); // Cierre de document.addEventListener
 
 // 7. EXPORTAR EXCEL PROFESIONAL
 window.exportarExcel = async function() {
