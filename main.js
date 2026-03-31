@@ -28,7 +28,8 @@ async function cargarSectores() {
 }
 
 // Escuchar cuando el DOM esté listo para cargar los sectores
-document.addEventListener('DOMContentLoaded', cargarSectores);
+//document.addEventListener('DOMContentLoaded', cargarSectores);
+cargarSectores();
 
 // Lógica de validación de cédula y bloqueo de nombre
 setTimeout(() => { // Usamos un pequeño delay para asegurar que el DOM cargó
