@@ -3,7 +3,7 @@ import { createClient } from 'https://cdn.jsdelivr.net/npm/@supabase/supabase-js
 
 const supabaseUrl = 'https://hnqshnbdndsvurffrpjs.supabase.co'
 const supabaseKey = 'sb_publishable_wgDPu5O49WPdWsm_xE_jmA_hJ4PoEXp'
-const supabase = createClient(supabaseUrl, supabaseKey)
+window.supabase = createClient(supabaseUrl, supabaseKey)
 
 let listaFotos = []; // Almacén temporal de archivos
 
