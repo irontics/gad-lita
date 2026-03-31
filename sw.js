@@ -1,7 +1,8 @@
-const CACHE_NAME = 'gad-lita-v5'; // <--- Recuerda subir el número (v3, v4...) para que el navegador detecte el cambio
+// 🔹 Versión automática (evita conflictos siempre)
+const CACHE_NAME = 'gad-lita-' + Date.now();
 
-// Archivos básicos para que la app cargue sin internet (Mantenemos tus rutas exactas)
-const assets = [
+// 🔹 Solo archivos estáticos (NO HTML dinámico)
+const STATIC_ASSETS = [
   './',
   './index.html',
   './main.js',
@@ -9,49 +10,55 @@ const assets = [
   './logo.png'
 ];
 
-// 1. INSTALACIÓN: Guarda los archivos en el caché del dispositivo
+// 🔹 INSTALACIÓN
 self.addEventListener('install', event => {
-  self.skipWaiting(); // <--- AÑADIDO: Fuerza a la nueva versión a instalarse de inmediato
+  self.skipWaiting();
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
-      console.log('Cache abierto: Archivos guardados');
-      return cache.addAll(assets);
+      return cache.addAll(STATIC_ASSETS);
     })
   );
 });
 
-// 2. ACTIVACIÓN: Elimina versiones antiguas del caché para evitar conflictos
+// 🔹 ACTIVACIÓN (limpia versiones viejas)
 self.addEventListener('activate', event => {
   event.waitUntil(
     caches.keys().then(keys => {
       return Promise.all(
-        keys.filter(key => key !== CACHE_NAME).map(key => caches.delete(key))
+        keys.map(key => {
+          if (key !== CACHE_NAME) {
+            return caches.delete(key);
+          }
+        })
       );
     })
   );
-  return self.clients.claim(); // <--- AÑADIDO: Toma el control de la página de inmediato sin esperar a reiniciar
+  self.clients.claim();
 });
 
-// 3. ESTRATEGIA DE CARGA (FETCH): (Mantenemos tu lógica original exacta)
+// 🔹 FETCH (network-first INTELIGENTE)
 self.addEventListener('fetch', event => {
   const url = event.request.url;
 
-  // NO tocar Supabase
+  // ❌ NO cachear Supabase ni APIs
   if (url.includes('supabase.co')) return;
 
+  // ❌ NO cachear HTML dinámico (evita bugs)
+  if (event.request.headers.get('accept')?.includes('text/html')) {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
+  // ✅ Estrategia: network first
   event.respondWith(
     fetch(event.request)
       .then(response => {
-        // Guardar copia en cache (actualizada)
-        const responseClone = response.clone();
+        const clone = response.clone();
         caches.open(CACHE_NAME).then(cache => {
-          cache.put(event.request, responseClone);
+          cache.put(event.request, clone);
         });
         return response;
       })
-      .catch(() => {
-        // Si no hay internet, usa cache
-        return caches.match(event.request);
-      })
+      .catch(() => caches.match(event.request))
   );
 });
