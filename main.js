@@ -7,7 +7,7 @@ const supabase = createClient(supabaseUrl, supabaseKey)
 
 let listaFotos = []; // Almacén temporal de archivos
 
-// --- NUEVAS FUNCIONES DE VALIDACIÓN Y CARGA ---
+// --- NUEVAS FUNCIONES DE VALIDACIÓN Y CARGA
 
 // Cargar sectores desde la base de datos al iniciar
 async function cargarSectores() {
