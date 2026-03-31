@@ -675,9 +675,9 @@ if ('serviceWorker' in navigator) {
     });
 
     // Este evento se dispara cuando el sw.js activa el self.clients.claim()
-    navigator.serviceWorker.addEventListener('controllerchange', () => {
-        console.log('Actualizando aplicación a la última versión...');
-        window.location.reload();
+   navigator.serviceWorker.addEventListener('controllerchange', () => {
+    console.log('Nueva versión lista (sin recarga automática)');
+
     });
 }
 
