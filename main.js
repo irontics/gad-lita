@@ -512,6 +512,35 @@ async function sincronizarPendientes() {
     }
     localStorage.setItem('reportes_pendientes', JSON.stringify(pendientes));
 }
+// --- SISTEMA DE ACTUALIZACIÓN AUTOMÁTICA (PWA) ---
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js')
+            .then(reg => {
+                console.log('Service Worker registrado');
+
+                // Detecta si hay una actualización en espera
+                reg.onupdatefound = () => {
+                    const installingWorker = reg.installing;
+                    installingWorker.onstatechange = () => {
+                        if (installingWorker.state === 'installed') {
+                            if (navigator.serviceWorker.controller) {
+                                // Hay contenido nuevo disponible, el sw.js hará el resto
+                                console.log('Nueva versión detectada en GitHub.');
+                            }
+                        }
+                    };
+                };
+            })
+            .catch(err => console.error('Error al registrar el SW:', err));
+    });
+
+    // Este evento se dispara cuando el sw.js activa el self.clients.claim()
+    navigator.serviceWorker.addEventListener('controllerchange', () => {
+        console.log('Actualizando aplicación a la última versión...');
+        window.location.reload();
+    });
+}
 
 window.addEventListener('online', sincronizarPendientes);
 sincronizarPendientes();

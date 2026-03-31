@@ -1,6 +1,6 @@
-const CACHE_NAME = 'gad-lita-v2';
+const CACHE_NAME = 'gad-lita-v4'; // <--- Recuerda subir el número (v3, v4...) para que el navegador detecte el cambio
 
-// Archivos básicos para que la app cargue sin internet
+// Archivos básicos para que la app cargue sin internet (Mantenemos tus rutas exactas)
 const assets = [
   './',
   './index.html',
@@ -11,6 +11,7 @@ const assets = [
 
 // 1. INSTALACIÓN: Guarda los archivos en el caché del dispositivo
 self.addEventListener('install', event => {
+  self.skipWaiting(); // <--- AÑADIDO: Fuerza a la nueva versión a instalarse de inmediato
   event.waitUntil(
     caches.open(CACHE_NAME).then(cache => {
       console.log('Cache abierto: Archivos guardados');
@@ -28,14 +29,14 @@ self.addEventListener('activate', event => {
       );
     })
   );
+  return self.clients.claim(); // <--- AÑADIDO: Toma el control de la página de inmediato sin esperar a reiniciar
 });
 
-// 3. ESTRATEGIA DE CARGA (FETCH):
+// 3. ESTRATEGIA DE CARGA (FETCH): (Mantenemos tu lógica original exacta)
 self.addEventListener('fetch', event => {
   const url = event.request.url;
 
-  // EXCEPCIÓN CRÍTICA: Si la petición va hacia Supabase (Base de Datos o Storage), 
-  // NO debe pasar por el caché. Esto permite que las subidas (POST) no fallen.
+  // EXCEPCIÓN CRÍTICA: Supabase NO pasa por el caché (Tu lógica original)
   if (url.includes('supabase.co')) {
     return; 
   }
@@ -43,6 +44,7 @@ self.addEventListener('fetch', event => {
   event.respondWith(
     caches.match(event.request).then(response => {
       // Devuelve el archivo si está en caché, de lo contrario lo busca en internet
+      // (Mantenemos tu lógica de "Caché primero" para máxima velocidad)
       return response || fetch(event.request).catch(() => {
         console.log("Modo offline: Archivo no disponible en caché.");
       });
