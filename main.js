@@ -335,28 +335,58 @@ window.enviarReporte = async function() {
 };
 
 // 4. ADMINISTRACIÓN (ACTUALIZADO CON REALTIME)
-window.verificarAdmin = function() {
+window.verificarAdmin = async function() {
     const clave = prompt("Clave de acceso:");
-    if (clave === "LITA2026") {
+
+    const { data, error } = await supabase
+        .from('admin_config')
+        .select('clave')
+        .eq('id', 1)
+        .single();
+
+    if (error || !data) {
+        return alert("Error al validar clave");
+    }
+
+    if (clave === data.clave) {
         document.getElementById('panelAdmin').classList.remove('hidden');
-        if (document.getElementById('btnAccesoAdmin')) document.getElementById('btnAccesoAdmin').classList.add('hidden');
-        
-        // Carga inicial
+        if (document.getElementById('btnAccesoAdmin')) {
+            document.getElementById('btnAccesoAdmin').classList.add('hidden');
+        }
+
+        // 🔥 ESTO SE MANTIENE IGUAL (NO TOCAR)
         actualizarTabla();
 
-        // ACTIVAR ACTUALIZACIÓN EN TIEMPO REAL
         supabase.channel('cambios_reportes')
             .on('postgres_changes', { 
                 event: '*', 
                 schema: 'public', 
                 table: 'reportes' 
-            }, (payload) => {
+            }, () => {
                 console.log('Cambio detectado en tiempo real');
-                actualizarTabla(); // Se refresca sola la tabla
+                actualizarTabla();
             })
             .subscribe();
 
-    } else { alert("Clave incorrecta"); }
+    } else {
+        alert("Clave incorrecta");
+    }
+};
+
+window.cambiarClaveAdmin = async function() {
+    const nueva = prompt("Nueva clave:");
+    if (!nueva) return;
+
+    const { error } = await supabase
+        .from('admin_config')
+        .update({ clave: nueva })
+        .eq('id', 1);
+
+    if (error) {
+        alert("Error al cambiar clave");
+    } else {
+        alert("Clave actualizada correctamente");
+    }
 };
 
 // 5. TABLA WEB
