@@ -397,7 +397,8 @@ async function actualizarTabla() {
     if (error || !cont) return;
 
     cont.innerHTML = `
-        <table class="w-full text-left text-[10px] border-collapse">
+    <div style="max-height: 60vh; overflow-y: auto;">    
+    <table class="w-full text-left text-[10px] border-collapse">
            <thead class="bg-gray-200 text-gray-800 border-b border-gray-400">
     <tr class="uppercase font-black text-[10px]">
         <th class="p-2 relative">
