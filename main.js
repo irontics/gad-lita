@@ -443,7 +443,7 @@ async function actualizarTabla() {
                                 ? `<a href="${item.ubicacion}" target="_blank">📍</a>` 
                                 : '<span class="text-gray-400 text-[8px]">N/A</span>'}
                         </td>
-                        <td class="p-2 text-gray-500 italic max-w-[150px] truncate">${item.descripcion}</td>
+                        <td class="p-2 text-gray-500 italic max-w-[200px]">${item.descripcion}</td>
                         <td class="p-2 text-center">
                             <span class="px-2 py-0.5 rounded shadow-sm font-black text-[8px] border ${
                                 item.estado === 'Finalizado' ? 'bg-blue-50 text-blue-700 border-blue-200' : 'bg-yellow-50 text-yellow-800 border-yellow-200'
