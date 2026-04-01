@@ -738,51 +738,78 @@ window.exportarExcel = async function() {
         const f = new Date(r.created_at).toLocaleString();
         const fotosArray = r.foto_url ? r.foto_url.split(', ') : [];
         const linkFoto = fotosArray.length > 0 ? fotosArray[0] : "";
+        const motivoAccion = r.motivo_accion || "N/A";
+        const observacion = r.observacion_cierre || "N/A";
 
         xmlRows += `
         <Row>
             <Cell ss:StyleID="sDatos"><Data ss:Type="String">${f}</Data></Cell>
+            <Cell ss:StyleID="sDatos"><Data ss:Type="String">${r.cedula_ciudadano}</Data></Cell>
             <Cell ss:StyleID="sDatos"><Data ss:Type="String">${r.nombre_ciudadano}</Data></Cell>
             <Cell ss:StyleID="sDatos"><Data ss:Type="String">${r.sector}</Data></Cell>
             <Cell ss:StyleID="sDatos"><Data ss:Type="String">${r.descripcion}</Data></Cell>
             <Cell ss:StyleID="sDatos"><Data ss:Type="String">${r.estado}</Data></Cell>
+            <Cell ss:StyleID="sDatos"><Data ss:Type="String">${motivoAccion}</Data></Cell> 
+            <Cell ss:StyleID="sDatos"><Data ss:Type="String">${observacion}</Data></Cell> 
             <Cell ss:StyleID="sDatos" ss:HRef="${r.ubicacion}"><Data ss:Type="String">VER MAPA</Data></Cell>
             ${linkFoto ? `<Cell ss:StyleID="sLink" ss:HRef="${linkFoto}"><Data ss:Type="String">VER FOTO</Data></Cell>` : '<Cell ss:StyleID="sDatos"><Data ss:Type="String">SIN FOTO</Data></Cell>'}
         </Row>`;
     });
+const excelTemplate = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>
+<Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
+    <Styles>
+        <Style ss:ID="sTitulo"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="14" ss:Bold="1" ss:Color="#228B22"/></Style>
+        <Style ss:ID="sHeader"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders><Font ss:Bold="1"/><Interior ss:Color="#D3D3D3" ss:Pattern="Solid"/></Style>
+        <Style ss:ID="sDatos"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
+        <Style ss:ID="sLink"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders><Font ss:Color="#0000FF" ss:Underline="Single"/></Style>
+    </Styles>
+    <Worksheet ss:Name="Reportes">
+        <Table ss:ExpandedColumnCount="10">
+            <Column ss:Width="110"/><Column ss:Width="130"/><Column ss:Width="100"/><Column ss:Width="200"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="150"/><Column ss:Width="150"/><Column ss:Width="80"/>
+            <Row ss:Height="30"><Cell ss:MergeAcross="9" ss:StyleID="sTitulo"><Data ss:Type="String">🛡️ REPORTE GAD PARROQUIAL DE LITA</Data></Cell></Row>
+            <Row ss:Height="20">
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">FECHA</Data></Cell>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">CEDULA</Data></Cell>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">NOMBRE</Data></Cell>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">SECTOR</Data></Cell>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">DETALLE</Data></Cell>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">ESTADO</Data></Cell>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">MOTIVO ACCIÓN</Data></Cell>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">OBSERVACIONES</Data></Cell>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">MAPA</Data></Cell>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">FOTO</Data></Cell>
+            </Row>
+            ${xmlRows}
+            
+            <Row>
+                <Cell><Data ss:Type="String"> </Data></Cell>
+                 <Cell colspan="9"><Data ss:Type="String"> </Data></Cell>
+            </Row>
+            <Row>
+                 <Cell><Data ss:Type="String"> </Data></Cell>
+                 <Cell colspan="9"><Data ss:Type="String"> </Data></Cell>
+            </Row>
+           
+            
+            <Row>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">Generado por:</Data></Cell>
+                <Cell ss:StyleID="sDatos" colspan="9"><Data ss:Type="String">Administrador</Data></Cell>
+            </Row>
+            <Row>
+                <Cell ss:StyleID="sHeader"><Data ss:Type="String">Fecha de Generación:</Data></Cell>
+                <Cell ss:StyleID="sDatos" colspan="9"><Data ss:Type="String">${new Date().toLocaleString()}</Data></Cell>
+            </Row>
+        </Table>
+    </Worksheet>
+</Workbook>`;
 
-    const excelTemplate = `<?xml version="1.0"?><?mso-application progid="Excel.Sheet"?>
-    <Workbook xmlns="urn:schemas-microsoft-com:office:spreadsheet" xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns:ss="urn:schemas-microsoft-com:office:spreadsheet">
-     <Styles>
-      <Style ss:ID="sTitulo"><Alignment ss:Horizontal="Center" ss:Vertical="Center"/><Font ss:FontName="Arial" ss:Size="14" ss:Bold="1" ss:Color="#228B22"/></Style>
-      <Style ss:ID="sHeader"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders><Font ss:Bold="1"/><Interior ss:Color="#D3D3D3" ss:Pattern="Solid"/></Style>
-      <Style ss:ID="sDatos"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders></Style>
-      <Style ss:ID="sLink"><Borders><Border ss:Position="Bottom" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Left" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Right" ss:LineStyle="Continuous" ss:Weight="1"/><Border ss:Position="Top" ss:LineStyle="Continuous" ss:Weight="1"/></Borders><Font ss:Color="#0000FF" ss:Underline="Single"/></Style>
-     </Styles>
-     <Worksheet ss:Name="Reportes">
-      <Table ss:ExpandedColumnCount="7">
-       <Column ss:Width="110"/><Column ss:Width="130"/><Column ss:Width="100"/><Column ss:Width="200"/><Column ss:Width="80"/><Column ss:Width="80"/><Column ss:Width="80"/>
-       <Row ss:Height="30"><Cell ss:MergeAcross="6" ss:StyleID="sTitulo"><Data ss:Type="String">🛡️ REPORTE GAD LITA</Data></Cell></Row>
-       <Row ss:Height="20">
-        <Cell ss:StyleID="sHeader"><Data ss:Type="String">FECHA</Data></Cell>
-        <Cell ss:StyleID="sHeader"><Data ss:Type="String">CIUDADANO</Data></Cell>
-        <Cell ss:StyleID="sHeader"><Data ss:Type="String">SECTOR</Data></Cell>
-        <Cell ss:StyleID="sHeader"><Data ss:Type="String">DETALLE</Data></Cell>
-        <Cell ss:StyleID="sHeader"><Data ss:Type="String">ESTADO</Data></Cell>
-        <Cell ss:StyleID="sHeader"><Data ss:Type="String">MAPA</Data></Cell>
-        <Cell ss:StyleID="sHeader"><Data ss:Type="String">FOTO</Data></Cell>
-       </Row>
-       ${xmlRows}
-      </Table>
-     </Worksheet>
-    </Workbook>`;
-
-    const blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = `Reporte_GAD_Lita.xls`;
-    link.click();
+const blob = new Blob([excelTemplate], { type: "application/vnd.ms-excel" });
+const link = document.createElement("a");
+link.href = URL.createObjectURL(blob);
+link.download = `Reporte_GAD_Lita.xls`;
+link.click();
 };
+
 
 // 8. SINCRONIZADOR FINAL (DEPURADO)
 async function sincronizarPendientes() {
