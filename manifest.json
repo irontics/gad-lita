@@ -1,6 +1,6 @@
 {
-  "name": "GAD Lita Digital",
-  "short_name": "Lita GAD",
+  "name": "Otavalo Digital",
+  "short_name": "Otavalo GAD",
   "start_url": "./index.html",
   "display": "fullscreen",
   "display_override": ["fullscreen", "minimal-ui"],
