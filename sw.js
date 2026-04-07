@@ -10,7 +10,7 @@ const STATIC_ASSETS = [
   './logo.png'
 ];
 
-// 🔹 INSTALACIÓN
+// 🔹 INSTALACIÓN  
 self.addEventListener('install', event => {
   self.skipWaiting();
   event.waitUntil(
